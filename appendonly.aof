@@ -1,0 +1,7 @@
+set name ahad
+set age 23
+INCR age
+DECR age
+DECR age
+DECR age
+DECR age
