@@ -16,7 +16,8 @@ public class RedisServer {
         this.pool = Executors.newFixedThreadPool(maxClients);
     }
 
-    public void start() throws IOException {
+    public void start() throws IOException 
+    {
         serverSocket = new ServerSocket(port);
         System.out.println("MiniRedis TCP server started on port " + port);
         while (!serverSocket.isClosed()) {

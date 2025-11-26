@@ -1,9 +1,6 @@
 import java.io.*;
 import java.util.Map;
 
-/**
- * Simple Append-Only File manager with safe replay and rewrite.
- */
 public class AOFManager {
     private final File aofFile;
 
@@ -15,8 +12,6 @@ public class AOFManager {
             throw new RuntimeException("Failed to create AOF file: " + e.getMessage(), e);
         }
     }
-
-    // Append a command (synchronized)
     public synchronized void appendCommand(String command) {
         try (FileWriter fw = new FileWriter(aofFile, true);
              BufferedWriter bw = new BufferedWriter(fw)) {
@@ -27,12 +22,6 @@ public class AOFManager {
             System.err.println("AOF append failed: " + e.getMessage());
         }
     }
-
-    /**
-     * Replay AOF into the provided store and expiry maps.
-     * This is READ-ONLY with respect to AOF file (no appends during replay).
-     * Supports: SET key value [EX seconds], DEL key
-     */
     public void loadAOF(Map<String, String> store, Map<String, Long> expiry) {
         if (!aofFile.exists()) return;
         try (BufferedReader br = new BufferedReader(new FileReader(aofFile))) {
@@ -43,8 +32,7 @@ public class AOFManager {
                 String[] tokens = line.split("\\s+");
                 String cmd = tokens[0].toUpperCase();
                 if ("SET".equals(cmd)) {
-                    // handle SET key value [EX seconds]
-                    if (tokens.length < 3) continue;
+                     if (tokens.length < 3) continue;
                     String key = tokens[1];
                     // reconstruct value (tokens[2..n]) except possible EX tail
                     String value = null;
@@ -109,45 +97,6 @@ public class AOFManager {
             }
         } catch (IOException e) {
             System.err.println("Failed to load AOF: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Rewrite/compact AOF: write one SET per existing key (skip expired).
-     */
-    public synchronized void rewriteAOF(Map<String, String> storeMap, Map<String, Long> expiryMap) {
-        File tmp = new File(aofFile.getAbsolutePath() + ".tmp");
-        try (FileWriter fw = new FileWriter(tmp, false);
-             BufferedWriter bw = new BufferedWriter(fw)) {
-            long now = System.currentTimeMillis();
-            for (Map.Entry<String, String> e : storeMap.entrySet()) {
-                String key = e.getKey();
-                Long exp = expiryMap.get(key);
-                if (exp != null && exp <= now) continue;
-                String value = e.getValue();
-                // Escape newlines are not supported — keep simple
-                bw.write("SET " + key + " " + value);
-                bw.newLine();
-            }
-            bw.flush();
-        } catch (IOException ex) {
-            System.err.println("AOF rewrite failed: " + ex.getMessage());
-            if (tmp.exists()) tmp.delete();
-            return;
-        }
-
-        // Replace atomically if possible
-        if (!tmp.renameTo(aofFile)) {
-            // fallback on Windows
-            try {
-                if (aofFile.delete()) {
-                    tmp.renameTo(aofFile);
-                } else {
-                    System.err.println("AOF rewrite: unable to replace file");
-                }
-            } catch (Exception ex) {
-                System.err.println("AOF rewrite replace error: " + ex.getMessage());
-            }
         }
     }
 }

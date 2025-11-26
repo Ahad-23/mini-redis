@@ -1,18 +1,15 @@
 public class CommandHandler {
     private final DataStore dataStore;
     private final AOFManager aofManager;
-
     public CommandHandler(DataStore dataStore, AOFManager aofManager) {
         this.dataStore = dataStore;
         this.aofManager = aofManager;
     }
-
     public String handleCommand(String input) {
         if (input == null || input.trim().isEmpty()) return "(error) Empty command";
         String raw = input.trim();
         String[] tokens = raw.split("\\s+");
         String cmd = tokens[0].toUpperCase();
-
         try {
             switch (cmd) {
                 case "SET":
@@ -29,8 +26,6 @@ public class CommandHandler {
                     return handleDecr(tokens);
                 case "FLUSHALL":
                     return handleFlushAll();
-                case "REWRITEAOF":
-                    return handleRewriteAOF();
                 default:
                     return "(error) Unsupported command: " + tokens[0];
             }
@@ -38,7 +33,6 @@ public class CommandHandler {
             return "(error) " + ex.getMessage();
         }
     }
-
     private String handleSet(String rawLine, String[] tokens) {
         // tokens: SET key value...  OR SET key value EX seconds
         if (tokens.length < 3) return "(error) SET requires key and value";
@@ -133,13 +127,6 @@ public class CommandHandler {
         // clear maps
         dataStore.getStore().clear();
         dataStore.getExpiry().clear();
-        // compact the AOF to empty
-        aofManager.rewriteAOF(dataStore.dumpAll(), dataStore.getExpiry());
-        return "OK";
-    }
-
-    private String handleRewriteAOF() {
-        aofManager.rewriteAOF(dataStore.dumpAll(), dataStore.getExpiry());
         return "OK";
     }
 }

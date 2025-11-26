@@ -1,6 +1,3 @@
-/**
- * Start the MiniRedis TCP server (port 6379).
- */
 public class Main {
     public static void main(String[] args) {
         final int port = 6379;

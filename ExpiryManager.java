@@ -36,16 +36,12 @@ public class ExpiryManager implements Runnable {
         }
     }
 
-    /**
-     * Actively clean up expired keys by sampling a subset.
-     */
+    //Actively clean up expired keys by sampling a subset.
     private void cleanupExpiredKeys() {
         if (expiry.isEmpty()) return;
 
         long now = System.currentTimeMillis();
         List<String> keys = new ArrayList<>(expiry.keySet());
-
-        // Sample a few keys randomly
         for (int i = 0; i < Math.min(SAMPLE_SIZE, keys.size()); i++) {
             String key = keys.get(random.nextInt(keys.size()));
             Long expireAt = expiry.get(key);
@@ -58,9 +54,7 @@ public class ExpiryManager implements Runnable {
         }
     }
 
-    /**
-     * Lazy expiration: called by GET to ensure key is still valid.
-     */
+    // Lazy expiration: called by GET to ensure key is still valid.
     public String getWithExpiryCheck(String key) {
         Long expireAt = expiry.get(key);
         if (expireAt != null && expireAt <= System.currentTimeMillis()) {

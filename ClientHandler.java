@@ -1,9 +1,5 @@
 import java.io.*;
 import java.net.Socket;
-
-/**
- * Handles one client connection (line-based protocol).
- */
 public class ClientHandler implements Runnable {
     private final Socket socket;
     private final MiniRedis miniRedis;
@@ -40,8 +36,6 @@ public class ClientHandler implements Runnable {
                 out.flush();
             }
         } catch (IOException e) {
-            // client disconnected; optional log:
-            // System.err.println("Client " + remote + " error: " + e.getMessage());
         } finally {
             try { socket.close(); } catch (IOException ignored) {}
         }

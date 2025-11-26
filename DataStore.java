@@ -3,39 +3,32 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DataStore {
-    private final ConcurrentHashMap<String, String> store = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Long> expiry = new ConcurrentHashMap<>();
-
-    public ConcurrentHashMap<String, String> getStore() {
+    private final ConcurrentHashMap<String, String> store=new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Long> expiry=new ConcurrentHashMap<>();
+    public ConcurrentHashMap<String, String> getStore() 
+    {
         return store;
     }
-
     public ConcurrentHashMap<String, Long> getExpiry() {
         return expiry;
     }
-
     public void set(String key, String value) {
         store.put(key, value);
-        // Keep expiry as-is (if caller wants to set/clear expiry, do it explicitly)
     }
-
-    public String get(String key) {
+   public String get(String key) {
         Long exp = expiry.get(key);
         if (exp != null && System.currentTimeMillis() > exp) {
-            // expired
             store.remove(key);
             expiry.remove(key);
             return null;
         }
         return store.get(key);
     }
-
     public boolean delete(String key) {
         String removed = store.remove(key);
         expiry.remove(key);
         return removed != null;
     }
-
     public boolean exists(String key) {
         Long exp = expiry.get(key);
         if (exp != null && System.currentTimeMillis() > exp) {
@@ -45,19 +38,12 @@ public class DataStore {
         }
         return store.containsKey(key);
     }
-
     public void setExpiry(String key, long epochMillis) {
         expiry.put(key, epochMillis);
     }
-
     public void removeExpiry(String key) {
         expiry.remove(key);
     }
-
-    /**
-     * Atomic INCR/DECR using compute.
-     * Returns new value or throws NumberFormatException if value cannot be parsed.
-     */
     public long incrBy(String key, long delta) {
         // Use compute to atomically update (also handles non-existing)
         final long[] result = new long[1];
@@ -77,22 +63,17 @@ public class DataStore {
                 return v;
             }
         });
-
         if (result[0] == Long.MIN_VALUE) {
             throw new NumberFormatException("value is not an integer");
         }
         return result[0];
     }
-
     public long incr(String key) {
         return incrBy(key, 1);
     }
-
     public long decr(String key) {
         return incrBy(key, -1);
     }
-
-    /** Return a snapshot copy of the store (used by AOF rewrite) */
     public Map<String, String> dumpAll() {
         return Collections.unmodifiableMap(new ConcurrentHashMap<>(store));
     }
