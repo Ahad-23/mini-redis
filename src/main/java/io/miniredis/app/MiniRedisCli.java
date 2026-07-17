@@ -1,5 +1,8 @@
+package io.miniredis.app;
+
 import java.io.*;
 import java.net.Socket;
+
 public class MiniRedisCli {
     public static void main(String[] args) throws Exception {
         Socket socket = new Socket("localhost", 6379);
@@ -7,7 +10,7 @@ public class MiniRedisCli {
         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-        System.out.println(in.readLine()); // welcome
+        System.out.println(in.readLine());
 
         while (true) {
             System.out.print("> ");

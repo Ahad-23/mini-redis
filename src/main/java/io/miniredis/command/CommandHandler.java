@@ -1,10 +1,17 @@
+package io.miniredis.command;
+
+import io.miniredis.store.DataStore;
+import io.miniredis.persistence.AOFManager;
+
 public class CommandHandler {
     private final DataStore dataStore;
     private final AOFManager aofManager;
+
     public CommandHandler(DataStore dataStore, AOFManager aofManager) {
         this.dataStore = dataStore;
         this.aofManager = aofManager;
     }
+
     public String handleCommand(String input) {
         if (input == null || input.trim().isEmpty()) return "(error) Empty command";
         String raw = input.trim();
@@ -33,12 +40,11 @@ public class CommandHandler {
             return "(error) " + ex.getMessage();
         }
     }
+
     private String handleSet(String rawLine, String[] tokens) {
-        // tokens: SET key value...  OR SET key value EX seconds
         if (tokens.length < 3) return "(error) SET requires key and value";
         String key = tokens[1];
 
-        // detect EX at end
         Integer ttlSeconds = null;
         String value;
         if (tokens.length >= 5 && tokens[tokens.length - 2].equalsIgnoreCase("EX")) {
@@ -47,7 +53,6 @@ public class CommandHandler {
             } catch (NumberFormatException nfe) {
                 return "(error) invalid EX seconds";
             }
-            // reconstruct value tokens[2 .. tokens.length-3]
             StringBuilder sb = new StringBuilder();
             for (int i = 2; i < tokens.length - 2; i++) {
                 if (i > 2) sb.append(' ');
@@ -55,7 +60,6 @@ public class CommandHandler {
             }
             value = sb.toString();
         } else {
-            // value is tokens[2..end]
             StringBuilder sb = new StringBuilder();
             for (int i = 2; i < tokens.length; i++) {
                 if (i > 2) sb.append(' ');
@@ -98,10 +102,6 @@ public class CommandHandler {
     private String handleIncr(String[] tokens) {
         if (tokens.length != 2) return "(error) INCR requires key";
         String key = tokens[1];
-        // if expired, DataStore.get already removes expiry on get - but ensure we remove expiry explicitly
-        if (dataStore.exists(key) == false) {
-            // not present or expired, incr will create with 1
-        }
         try {
             long val = dataStore.incr(key);
             aofManager.appendCommand("INCR " + key);
@@ -124,7 +124,6 @@ public class CommandHandler {
     }
 
     private String handleFlushAll() {
-        // clear maps
         dataStore.getStore().clear();
         dataStore.getExpiry().clear();
         return "OK";

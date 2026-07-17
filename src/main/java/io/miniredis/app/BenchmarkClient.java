@@ -1,3 +1,5 @@
+package io.miniredis.app;
+
 import java.io.*;
 import java.net.Socket;
 
@@ -5,8 +7,8 @@ public class BenchmarkClient {
 
     public static void main(String[] args) throws Exception {
 
-        int totalOps = 50000;  // number of operations
-        int threads = 4;       // number of parallel benchmark threads
+        int totalOps = 50000;
+        int threads = 4;
 
         Thread[] workers = new Thread[threads];
 
@@ -16,9 +18,7 @@ public class BenchmarkClient {
 
         long start = System.currentTimeMillis();
 
-        // Start all threads
         for (Thread th : workers) th.start();
-        // Wait for them to finish
         for (Thread th : workers) th.join();
 
         long end = System.currentTimeMillis();
@@ -37,13 +37,13 @@ public class BenchmarkClient {
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
 
-            in.readLine();  // skip welcome message
+            in.readLine();
 
             for (int i = 0; i < ops; i++) {
                 out.write("SET key" + i + " " + i);
                 out.write("\r\n");
                 out.flush();
-                in.readLine(); // read response
+                in.readLine();
             }
 
         } catch (Exception e) {

@@ -1,3 +1,5 @@
+package io.miniredis.persistence;
+
 import java.io.*;
 import java.util.Map;
 
@@ -7,11 +9,14 @@ public class AOFManager {
     public AOFManager(String filename) {
         this.aofFile = new File(filename);
         try {
+            File parent = aofFile.getParentFile();
+            if (parent != null && !parent.exists()) parent.mkdirs();
             if (!aofFile.exists()) aofFile.createNewFile();
         } catch (IOException e) {
             throw new RuntimeException("Failed to create AOF file: " + e.getMessage(), e);
         }
     }
+
     public synchronized void appendCommand(String command) {
         try (FileWriter fw = new FileWriter(aofFile, true);
              BufferedWriter bw = new BufferedWriter(fw)) {
@@ -22,6 +27,7 @@ public class AOFManager {
             System.err.println("AOF append failed: " + e.getMessage());
         }
     }
+
     public void loadAOF(Map<String, String> store, Map<String, Long> expiry) {
         if (!aofFile.exists()) return;
         try (BufferedReader br = new BufferedReader(new FileReader(aofFile))) {
@@ -32,18 +38,15 @@ public class AOFManager {
                 String[] tokens = line.split("\\s+");
                 String cmd = tokens[0].toUpperCase();
                 if ("SET".equals(cmd)) {
-                     if (tokens.length < 3) continue;
+                    if (tokens.length < 3) continue;
                     String key = tokens[1];
-                    // reconstruct value (tokens[2..n]) except possible EX tail
                     String value = null;
                     Integer ttlSeconds = null;
                     if (tokens.length >= 5) {
-                        // check if second-last token is EX
                         String maybeEX = tokens[tokens.length - 2];
                         if ("EX".equalsIgnoreCase(maybeEX)) {
                             try {
                                 ttlSeconds = Integer.parseInt(tokens[tokens.length - 1]);
-                                // value is tokens[2..tokens.length-3]
                                 StringBuilder sb = new StringBuilder();
                                 for (int i = 2; i < tokens.length - 2; i++) {
                                     if (i > 2) sb.append(' ');
@@ -51,12 +54,10 @@ public class AOFManager {
                                 }
                                 value = sb.toString();
                             } catch (NumberFormatException nfe) {
-                                // fallback: treat full remainder as value
                             }
                         }
                     }
                     if (value == null) {
-                        // simple case: value is tokens[2..end]
                         StringBuilder sb = new StringBuilder();
                         for (int i = 2; i < tokens.length; i++) {
                             if (i > 2) sb.append(' ');
@@ -77,9 +78,7 @@ public class AOFManager {
                         expiry.remove(key);
                     }
                 } else {
-                    // ignore unknown commands on replay (INCR/DECR may have been logged as 'INCR key')
                     if ("INCR".equals(cmd) || "DECR".equals(cmd)) {
-                        // apply INCR/DECR semantics (best-effort)
                         if (tokens.length >= 2) {
                             String key = tokens[1];
                             String cur = store.get(key);
@@ -89,7 +88,6 @@ public class AOFManager {
                                 else curv -= 1;
                                 store.put(key, String.valueOf(curv));
                             } catch (NumberFormatException ignored) {
-                                // skip invalid numeric during replay
                             }
                         }
                     }

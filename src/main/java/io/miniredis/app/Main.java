@@ -1,8 +1,15 @@
+package io.miniredis.app;
+
+import io.miniredis.server.RedisServer;
+
 public class Main {
     public static void main(String[] args) {
-        final int port = 6379;
-        final int maxClients = 100;
-        MiniRedis miniRedis = new MiniRedis();
+        Config cfg = new Config();
+        final int port = cfg.getPort();
+        final int maxClients = cfg.getMaxClients();
+        final String aofPath = cfg.getAofPath();
+
+        MiniRedis miniRedis = new MiniRedis(aofPath);
         RedisServer server = new RedisServer(port, miniRedis, maxClients);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

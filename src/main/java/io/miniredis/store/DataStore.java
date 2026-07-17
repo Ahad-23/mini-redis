@@ -1,21 +1,26 @@
+package io.miniredis.store;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DataStore {
-    private final ConcurrentHashMap<String, String> store=new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Long> expiry=new ConcurrentHashMap<>();
-    public ConcurrentHashMap<String, String> getStore() 
-    {
+    private final ConcurrentHashMap<String, String> store = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Long> expiry = new ConcurrentHashMap<>();
+
+    public ConcurrentHashMap<String, String> getStore() {
         return store;
     }
+
     public ConcurrentHashMap<String, Long> getExpiry() {
         return expiry;
     }
+
     public void set(String key, String value) {
         store.put(key, value);
     }
-   public String get(String key) {
+
+    public String get(String key) {
         Long exp = expiry.get(key);
         if (exp != null && System.currentTimeMillis() > exp) {
             store.remove(key);
@@ -24,11 +29,13 @@ public class DataStore {
         }
         return store.get(key);
     }
+
     public boolean delete(String key) {
         String removed = store.remove(key);
         expiry.remove(key);
         return removed != null;
     }
+
     public boolean exists(String key) {
         Long exp = expiry.get(key);
         if (exp != null && System.currentTimeMillis() > exp) {
@@ -38,14 +45,16 @@ public class DataStore {
         }
         return store.containsKey(key);
     }
+
     public void setExpiry(String key, long epochMillis) {
         expiry.put(key, epochMillis);
     }
+
     public void removeExpiry(String key) {
         expiry.remove(key);
     }
+
     public long incrBy(String key, long delta) {
-        // Use compute to atomically update (also handles non-existing)
         final long[] result = new long[1];
         store.compute(key, (k, v) -> {
             if (v == null) {
@@ -58,7 +67,6 @@ public class DataStore {
                 result[0] = updated;
                 return String.valueOf(updated);
             } catch (NumberFormatException ex) {
-                // keep old value (no change) and signal by setting result to Long.MIN_VALUE
                 result[0] = Long.MIN_VALUE;
                 return v;
             }
@@ -68,12 +76,15 @@ public class DataStore {
         }
         return result[0];
     }
+
     public long incr(String key) {
         return incrBy(key, 1);
     }
+
     public long decr(String key) {
         return incrBy(key, -1);
     }
+
     public Map<String, String> dumpAll() {
         return Collections.unmodifiableMap(new ConcurrentHashMap<>(store));
     }

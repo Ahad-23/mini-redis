@@ -1,5 +1,10 @@
+package io.miniredis.server;
+
+import io.miniredis.app.MiniRedis;
+
 import java.io.*;
 import java.net.Socket;
+
 public class ClientHandler implements Runnable {
     private final Socket socket;
     private final MiniRedis miniRedis;

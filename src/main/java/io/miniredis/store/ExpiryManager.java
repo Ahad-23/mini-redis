@@ -1,3 +1,5 @@
+package io.miniredis.store;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -5,12 +7,12 @@ public class ExpiryManager implements Runnable {
     private final ConcurrentHashMap<String, String> store;
     private final ConcurrentHashMap<String, Long> expiry;
     private final Random random = new Random();
-    private final int SAMPLE_SIZE = 20; // number of keys to check each run
+    private final int SAMPLE_SIZE = 20;
     private final long cleanupIntervalMillis;
 
     public ExpiryManager(ConcurrentHashMap<String, String> store,
                          ConcurrentHashMap<String, Long> expiry) {
-        this(store, expiry, 1000L); // default: run every 1 second
+        this(store, expiry, 1000L);
     }
 
     public ExpiryManager(ConcurrentHashMap<String, String> store,
@@ -36,7 +38,6 @@ public class ExpiryManager implements Runnable {
         }
     }
 
-    //Actively clean up expired keys by sampling a subset.
     private void cleanupExpiredKeys() {
         if (expiry.isEmpty()) return;
 
@@ -54,13 +55,12 @@ public class ExpiryManager implements Runnable {
         }
     }
 
-    // Lazy expiration: called by GET to ensure key is still valid.
     public String getWithExpiryCheck(String key) {
         Long expireAt = expiry.get(key);
         if (expireAt != null && expireAt <= System.currentTimeMillis()) {
             store.remove(key);
             expiry.remove(key);
-            return null; // key expired
+            return null;
         }
         return store.get(key);
     }
